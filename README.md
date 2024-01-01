@@ -1,9 +1,13 @@
-# Learning [PyTorch](https://pytorch.org/)
+# [PyTorch](https://pytorch.org/) Projects
 
-## Repository I've created in order to document the progress of learning PyTorch
+## Repository with most of my projects created with PyTorch
 
-## You can find 2 folders in src
+### You can find 2 folders in src
 
-### - SimpleModels: Folder with simple models I've created when learning the basics
+#### - SimpleModels: Simpler models not excedding 100mb of size
 
-### - AdvancedModels: Folder with more advanced models I've created to learn advanced concepts
+#### - AdvancedModels: Bigger models made for more complex tasks
+
+## Featured projects:
+
+### 1. [CIFAR100 - MarcelNet](https://github.com/MarcelWinterot/learning-pytorch/tree/main/src/AdvancedModels/CIFAR100)
