@@ -1,17 +1,26 @@
 from Model import MarcelNet
-from Data import train_loader, test_loader
+from Data import train_loader
 import torch.nn as nn
 import torch
 from tqdm import tqdm
 
-model = MarcelNet()
-loss_function = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), 0.01)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+model = MarcelNet().to(device)
+
+for layer in model.modules():
+    if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.Linear):
+        nn.init.kaiming_normal_(layer.weight, nonlinearity='leaky_relu')
+
+loss_function = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(model.parameters(), 0.01,
+                            momentum=0.9, weight_decay=5e-4, nesterov=True)
+
+max_grad_norm = 5.0
 EPOCHS = 100
 
 
-def train(epochs, train_loader, test_loader) -> None:
+def train(epochs, train_loader) -> None:
     for epoch in range(1, epochs + 1):
         print(f"STARTED EPOCH: {epoch}")
 
@@ -29,6 +38,12 @@ def train(epochs, train_loader, test_loader) -> None:
             loss = loss_function(outputs, labels)
             loss.backward()
 
+            for param in model.parameters():
+                if param.grad is not None:
+                    nn.utils.clip_grad_norm_(param, max_grad_norm)
+
+            optimizer.step()
+
             running_loss += loss.item()
 
             total_samples += len(inputs)
@@ -43,28 +58,36 @@ def train(epochs, train_loader, test_loader) -> None:
         print(
             f"Epoch: {epoch} Loss: {epoch_loss:.4f} Accuracy: {epoch_accuracy:.2f}%")
 
-        test_loader = tqdm(test_loader, desc='Validation', leave=False)
+        torch.save(model.state_dict(), f"model_{epoch}.pth")
 
-        val_running_loss = 0.0
-        val_correct_predictions = 0
-        val_total_samples = 0
 
-        model.eval()
+def validate(test_loader):
+    model.eval()
 
-        with torch.no_grad():
-            for val_inputs, val_label in test_loader:
-                val_output = model(val_inputs)
-                val_loss = loss_function(val_output, val_label)
+    test_loader = tqdm(test_loader, desc='Validation', leave=False)
 
-                val_running_loss += val_loss.item()
-                val_total_samples += len(val_inputs)
+    running_loss = 0.0
+    correct_predictions = 0
+    total_samples = 0
 
-                for i in range(len(val_output)):
-                    if torch.argmax(val_output[i]) == torch.argmax(val_label[i]):
-                        val_correct_predictions += 1
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            outputs = model(inputs)
+            loss = loss_function(outputs, labels)
 
-        val_epoch_loss = val_running_loss / len(test_loader)
-        val_epoch_accuracy = val_correct_predictions / val_total_samples * 100
+            running_loss += loss.item()
 
-        print(
-            f"Epoch: {epoch} Loss: {val_epoch_loss:.4f} Accuracy: {val_epoch_accuracy:.2f}%")
+            total_samples += len(inputs)
+
+            for i in range(len(outputs)):
+                if torch.argmax(outputs[i]) == torch.argmax(labels[i]):
+                    correct_predictions += 1
+
+    epoch_loss = running_loss / len(test_loader)
+    epoch_accuracy = correct_predictions / total_samples * 100
+
+    print(
+        f"Validation finished: Loss: {epoch_loss:.4f} Accuracy: {epoch_accuracy:.2f}%")
+
+
+train(EPOCHS, train_loader)

@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 dataset = load_dataset('cifar100')
 
 train_df = dataset['train']
-test_df = dataset['test']
+# test_df = dataset['test']
 
 
 def process_data(df):
@@ -29,13 +29,21 @@ def process_data(df):
         y[i] = transform_label(df[i]['fine_label'])
 
     X = torch.tensor(X)
+
     y = torch.tensor(y)
 
     return (X, y)
 
 
 X_train, y_train = process_data(train_df)
-X_test, y_test = process_data(test_df)
+# X_test, y_test = process_data(test_df)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+X_train = X_train.to(device)
+y_train = y_train.to(device)
+# X_test = X_test.to(device)
+# y_test = y_test.to(device)
 
 
 class CIFAR100Dataset(Dataset):
@@ -51,7 +59,7 @@ class CIFAR100Dataset(Dataset):
 
 
 train_dataset = CIFAR100Dataset(X_train, y_train)
-test_dataset = CIFAR100Dataset(X_test, y_test)
+# test_dataset = CIFAR100Dataset(X_test, y_test)
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=1000)
+# test_loader = DataLoader(test_dataset, batch_size=1000)
