@@ -57,13 +57,13 @@ class MarcelNet(nn.Module):
 
     def __init__(self) -> None:
         super().__init__()
-        number_of_blocks = 4  # Number of blocks
+        number_of_blocks = 3  # Number of blocks
         starting_channels = 3  # Starting channels
         # By how much we increase the channels on each layer. multiplier * 2^layer_index
-        current_multiplier = 16
+        current_multiplier = 32
         max_channels = 256  # Maximum number of channels
-        number_of_parralel_layers = 6  # Number of parallel layers
-        number_of_conv_layers = 4  # Number of conv layers in each parallel layer
+        number_of_parralel_layers = 4  # Number of parallel layers
+        number_of_conv_layers = 3  # Number of conv layers in each parallel layer
 
         kernel_sizes = [1 + 2 * i for i in range(number_of_parralel_layers)]
         channels = self.initalizer_channels(
@@ -86,8 +86,8 @@ class MarcelNet(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        self.linear_1 = nn.Linear(1024, 512)
-        self.linear_2 = nn.Linear(512, 256)
+        self.linear_1 = nn.Linear(4096, 1024)
+        self.linear_2 = nn.Linear(1024, 256)
         self.linear_3 = nn.Linear(256, 100)
 
     def initalizer_channels(self, number_of_layers: int, starting_channels: int, current_multiplier: int, max_channels: int, number_of_blocks: int) -> list:

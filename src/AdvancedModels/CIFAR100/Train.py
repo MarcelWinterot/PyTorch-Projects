@@ -12,12 +12,15 @@ for layer in model.modules():
     if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.Linear):
         nn.init.kaiming_normal_(layer.weight, nonlinearity='leaky_relu')
 
+# model.load_state_dict(torch.load(
+#     'src/AdvancedModels/CIFAR100/models/best_model.pth'))
+
 loss_function = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), 0.01,
                             momentum=0.9, weight_decay=5e-4, nesterov=True)
 
 max_grad_norm = 5.0
-EPOCHS = 100
+EPOCHS = 200
 
 
 def train(epochs, train_loader) -> None:
