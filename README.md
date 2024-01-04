@@ -10,4 +10,6 @@
 
 ## Featured projects:
 
-### 1. [CIFAR100 - MarcelNet](https://github.com/MarcelWinterot/learning-pytorch/tree/main/src/AdvancedModels/CIFAR100)
+### 1. [CIFAR100](https://github.com/MarcelWinterot/learning-pytorch/tree/main/src/AdvancedModels/CIFAR100)
+
+### 2. [Booking Challenge](https://github.com/MarcelWinterot/learning-pytorch/tree/main/src/AdvancedModels/Booking)
