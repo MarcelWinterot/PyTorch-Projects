@@ -83,7 +83,7 @@ def process_countries(X, y):
 
     X['hotel_country'] = all_countries_encoded[:len(X)]
     X['booker_country'] = all_countries_encoded[len(X):len(X)+len(y)]
-    y['next_hotel_country'] = all_countries_encoded[-len(y):]
+    y['next_hotel_country'] = all_countries_encoded[-len(y):] 
 
     return X, y
 
@@ -124,5 +124,9 @@ def process_y_data(y):
 
 y_city, y_country = process_y_data(y)
 
-print(y_city[:5])
-print(y_country.head())
+# print(y_city[:5])
+# print(y_country.head())
+
+print(X.shape)
+print(y_city.shape)
+print(y_country.shape)
