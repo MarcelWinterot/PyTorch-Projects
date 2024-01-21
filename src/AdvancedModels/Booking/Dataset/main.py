@@ -13,9 +13,10 @@ if we're lacking in data we will just add test set to training
 - Drop the device_class and affiliate_id for now, as I don't see them being useful
 - Remove the user_id and utrip_id
 """
-import pandas as pd
-import numpy as np
+import torch
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+import pandas as pd
+
 
 train_df = pd.read_csv('./src/AdvancedModels/Booking/Dataset/train_set.csv')
 
@@ -83,7 +84,7 @@ def process_countries(X, y):
 
     X['hotel_country'] = all_countries_encoded[:len(X)]
     X['booker_country'] = all_countries_encoded[len(X):len(X)+len(y)]
-    y['next_hotel_country'] = all_countries_encoded[-len(y):] 
+    y['next_hotel_country'] = all_countries_encoded[-len(y):]
 
     return X, y
 
@@ -106,12 +107,6 @@ def process_cities(X, y):
 
 X, y = process_cities(X, y)
 
-print(X.head())
-print(y.head())
-
-print(len(y['next_city_id'].unique()))
-print(len(y['next_hotel_country'].unique()))
-
 
 def process_y_data(y):
     y_city = y['next_city_id'].values
@@ -124,9 +119,13 @@ def process_y_data(y):
 
 y_city, y_country = process_y_data(y)
 
-# print(y_city[:5])
-# print(y_country.head())
+X = torch.tensor(X.to_numpy())
+y_country = torch.tensor(y_country.to_numpy())
+y_city = torch.tensor(y_city)
 
-print(X.shape)
-print(y_city.shape)
-print(y_country.shape)
+
+torch.save(X, './src/AdvancedModels/Booking/Training/X.pt')
+torch.save(y_country, './src/AdvancedModels/Booking/Training/y_country.pt')
+torch.save(y_city, './src/AdvancedModels/Booking/Training/y_city.pt')
+
+print(f"Data saved")
