@@ -9,16 +9,15 @@ class RNNBlock(nn.Module):
         self.activation = activation
 
         if bidirectional:
-            in_between_channels //= 2
-            out_channels //= 2
-
-        self.lstm = nn.LSTM(
-            in_channels, in_between_channels, num_layers, batch_first=True, bidirectional=bidirectional)
-        self.gru = nn.GRU(
-            in_between_channels * 2, out_channels, num_layers, batch_first=True, bidirectional=bidirectional)
-
-        if bidirectional:
-            out_channels *= 2
+            self.lstm = nn.LSTM(
+                in_channels, in_between_channels // 2, num_layers, batch_first=True, bidirectional=bidirectional)
+            self.gru = nn.GRU(
+                in_between_channels, out_channels // 2, num_layers, batch_first=True, bidirectional=bidirectional)
+        else:
+            self.lstm = nn.LSTM(
+                in_channels, in_between_channels, num_layers, batch_first=True, bidirectional=bidirectional)
+            self.gru = nn.GRU(
+                in_between_channels, out_channels, num_layers, batch_first=True, bidirectional=bidirectional)
 
         if use_norm:
             self.norm = nn.LayerNorm(out_channels)
@@ -40,17 +39,23 @@ class RNNBlock(nn.Module):
         return X
 
 
+class MLPBlock(nn.Module):
+    def __init__(self, otuput_channels):
+        super(MLPBlock, self).__init__()
+        input_size = otuput_channels * 9
+
+
 class CountryBlock(nn.Module):
     def __init__(self):
         super(CountryBlock, self).__init__()
         self.rnn_1 = RNNBlock(F.relu, 1, 32, 64, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=True)
+                              dropout=0.0, use_norm=False)
         self.rnn_2 = RNNBlock(F.relu, 64, 96, 128, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=True)
+                              dropout=0.0, use_norm=False)
         self.rnn_3 = RNNBlock(F.relu, 128, 256, 256, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=True)
+                              dropout=0.0, use_norm=False)
         self.rnn_4 = RNNBlock(F.relu, 256, 256, 256, num_layers=2, bidirectional=True,
-                              dropout=0.0, use_norm=True)
+                              dropout=0.0, use_norm=False)
 
         self.flatten = nn.Flatten()
 
