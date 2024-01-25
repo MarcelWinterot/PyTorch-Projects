@@ -1,18 +1,3 @@
-"""Plan for the data:
-
-1. Split the dataset into X and y
-X: All the data about current city
-y: Next city and country of the with the same utrip_id
-
-We'd have to remove the last element of each trip, but we have enough data to do so,
-if we're lacking in data we will just add test set to training
-
-2. Process the data
-- Turn checkin/out time into year, month, day
-- Turn the countries into numbers and then embedding
-- Drop the device_class and affiliate_id for now, as I don't see them being useful
-- Remove the user_id and utrip_id
-"""
 import torch
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import pandas as pd
@@ -21,6 +6,25 @@ import pandas as pd
 train_df = pd.read_csv('./src/AdvancedModels/Booking/Dataset/train_set.csv')
 
 train_df = train_df.sort_values(['utrip_id', 'checkin'])
+
+
+def double_data_by_reversing_trips(train_df):
+    reversed_df = train_df.copy()
+    reversed_df = reversed_df.sort_values(['utrip_id', 'checkin'])
+    reversed_df['city_id'] = reversed_df.groupby(
+        'utrip_id')['city_id'].transform(lambda x: x[::-1])
+    reversed_df['hotel_country'] = reversed_df.groupby(
+        'utrip_id')['hotel_country'].transform(lambda x: x[::-1])
+    reversed_df['booker_country'] = reversed_df.groupby(
+        'utrip_id')['booker_country'].transform(lambda x: x[::-1])
+
+    train_df = pd.concat([train_df, reversed_df])
+
+    return train_df
+
+
+train_df = double_data_by_reversing_trips(train_df)
+
 
 train_df['next_hotel_country'] = train_df.groupby(
     'utrip_id')['hotel_country'].shift(-1)
@@ -107,6 +111,8 @@ def process_cities(X, y):
 
 X, y = process_cities(X, y)
 
+print(X.head())
+
 
 def process_y_data(y):
     y_city = y['next_city_id'].values
@@ -118,6 +124,8 @@ def process_y_data(y):
 
 
 y_city, y_country = process_y_data(y)
+
+print(y_country.shape)
 
 X = torch.tensor(X.to_numpy())
 y_country = torch.tensor(y_country.to_numpy())
