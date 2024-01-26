@@ -23,7 +23,7 @@ def double_data_by_reversing_trips(train_df):
     return train_df
 
 
-train_df = double_data_by_reversing_trips(train_df)
+# train_df = double_data_by_reversing_trips(train_df)
 
 
 train_df['next_hotel_country'] = train_df.groupby(
@@ -115,6 +115,8 @@ print(X.head())
 
 
 def process_y_data(y):
+    print(y['next_city_id'].max())
+
     y_city = y['next_city_id'].values
     y_country = y['next_hotel_country'].values
 
@@ -124,8 +126,6 @@ def process_y_data(y):
 
 
 y_city, y_country = process_y_data(y)
-
-print(y_country.shape)
 
 X = torch.tensor(X.to_numpy())
 y_country = torch.tensor(y_country.to_numpy())
