@@ -7,6 +7,7 @@ class RNNBlock(nn.Module):
     def __init__(self, activation, in_channels, in_between_channels, out_channels, num_layers=1, bidirectional=False, dropout=0.0, use_norm=True):
         super(RNNBlock, self).__init__()
         self.activation = activation
+        self.use_norm = use_norm
 
         if bidirectional:
             self.lstm = nn.LSTM(
@@ -33,27 +34,26 @@ class RNNBlock(nn.Module):
         X = self.activation(X)
         X = self.drop(X)
 
-        if hasattr(self, 'norm'):
+        if self.use_norm:
             X = self.norm(X)
 
         return X
 
 
 class MLPBlock(nn.Module):
-    def __init__(self, activation, input_channels, dropout=0.0, use_norm=True):
+    def __init__(self, activation, dropout=0.0, use_norm=True):
         super(MLPBlock, self).__init__()
-        input_size = input_channels * 9
-
         self.activation = activation
+        self.use_norm = use_norm
 
-        self.linear_1 = nn.Linear(input_size, 2048)
-        self.linear_2 = nn.Linear(2048, 1024)
-        self.linear_3 = nn.Linear(1024, 512)
-        self.linear_4 = nn.Linear(512, 256)
-        self.linear_5 = nn.Linear(256, 195)
+        self.linear_1 = nn.Linear(2304, 4096)
+        self.linear_2 = nn.Linear(4096, 8192)
+        self.linear_3 = nn.Linear(8192, 10276)
 
         if use_norm:
-            self.norm = nn.LayerNorm(195)
+            self.norm_1 = nn.LayerNorm(4096)
+            self.norm_2 = nn.LayerNorm(8192)
+            self.norm_3 = nn.LayerNorm(10276)
 
         self.drop = nn.Dropout(dropout)
 
@@ -62,36 +62,34 @@ class MLPBlock(nn.Module):
         X = self.activation(X)
         X = self.drop(X)
 
+        if self.use_norm:
+            X = self.norm_1(X)
+
         X = self.linear_2(X)
         X = self.activation(X)
         X = self.drop(X)
 
+        if self.use_norm:
+            X = self.norm_2(X)
+
         X = self.linear_3(X)
-        X = self.activation(X)
-        X = self.drop(X)
+        # X = self.activation(X)
+        # X = self.drop(X)
 
-        X = self.linear_4(X)
-        X = self.activation(X)
-        X = self.drop(X)
-
-        X = self.linear_5(X)
-        X = self.activation(X)
-        X = self.drop(X)
-
-        if hasattr(self, 'norm'):
-            X = self.norm(X)
+        # if self.use_norm:
+        #     X = self.norm_3(X)
 
         return X
 
 
 class BilinearComposition(nn.Module):
-    def __init__(self, activation, input_channels, dropout=0.0, use_norm=True):
+    def __init__(self, activation, dropout=0.0, use_norm=True):
         super(BilinearComposition, self).__init__()
-        self.mlp_1 = MLPBlock(activation, input_channels, dropout, use_norm)
-        self.mlp_2 = MLPBlock(activation, input_channels, dropout, use_norm)
+        self.mlp_1 = MLPBlock(activation, dropout, use_norm)
+        self.mlp_2 = MLPBlock(activation, dropout, use_norm)
 
-        self.weights = nn.Parameter(torch.randn(195, 195))
-        self.biases = nn.Parameter(torch.randn(195))
+        self.weights = nn.Parameter(torch.randn(10276, 10276))
+        self.biases = nn.Parameter(torch.randn(10276))
 
         nn.init.xavier_normal_(self.weights)
         nn.init.constant_(self.biases, 0.0)
@@ -109,95 +107,30 @@ class BilinearComposition(nn.Module):
         return X
 
 
-class CountryBlock(nn.Module):
+class Model(nn.Module):
     def __init__(self):
-        super(CountryBlock, self).__init__()
-        self.activation = nn.PReLU()
+        super(Model, self).__init__()
+        self.activation = F.relu
 
-        self.rnn_1 = RNNBlock(self.activation, 1, 32, 64, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
-        self.rnn_2 = RNNBlock(self.activation, 64, 96, 128, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
-        self.rnn_3 = RNNBlock(self.activation, 128, 256, 256, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
-        self.rnn_4 = RNNBlock(self.activation, 256, 256, 256, num_layers=2, bidirectional=True,
-                              dropout=0.0, use_norm=False)
-
-        self.flatten = nn.Flatten()
-
-        # self.bilinear = BilinearComposition(
-        #     F.relu, 256, dropout=0.0)
-        self.linear_1 = nn.Linear(2304, 1152)
-        self.linear_2 = nn.Linear(1152, 512)
-        self.linear_3 = nn.Linear(512, 256)
-        self.linear_4 = nn.Linear(256, 195)
-
-        self.relu = nn.ReLU()
-        self.drop_02 = nn.Dropout(0.2)
-        self.drop_05 = nn.Dropout(0.5)
-
-        self.city_embedding = nn.Embedding(39901, 1)
-        self.country_embedding = nn.Embedding(195, 1)
-
-    def forward(self, X):
-        X[:, 0] = self.city_embedding(X[:, 0].long()).squeeze(2)
-        X[:, 1] = self.country_embedding(X[:, 1].long()).squeeze(2)
-        X[:, 2] = self.country_embedding(X[:, 2].long()).squeeze(2)
-
-        X = self.rnn_1(X)
-
-        X = self.rnn_2(X)
-
-        X = self.rnn_3(X)
-
-        X = self.rnn_4(X)
-
-        X = self.flatten(X)
-
-        # X = self.bilinear(X)
-
-        X = self.linear_1(X)
-        X = self.activation(X)
-        # X = self.drop_05(X)
-
-        X = self.linear_2(X)
-        X = self.activation(X)
-
-        X = self.linear_3(X)
-        X = self.activation(X)
-
-        X = self.linear_4(X)
-
-        X = F.softmax(X, dim=1)
-
-        return X
-
-
-class CityBlock(nn.Module):
-    def __init__(self):
-        super(CityBlock, self).__init__()
-        self.rnn_1 = RNNBlock(F.relu, 1, 32, 64, num_layers=1, bidirectional=False,
+        self.rnn_1 = RNNBlock(self.activation, 1, 32, 64, num_layers=1, bidirectional=False,
                               dropout=0.0)
-        self.rnn_2 = RNNBlock(F.relu, 64, 96, 128, num_layers=1, bidirectional=False,
+        self.rnn_2 = RNNBlock(self.activation, 64, 96, 128, num_layers=1, bidirectional=False,
                               dropout=0.0)
-        self.rnn_3 = RNNBlock(F.relu, 128, 256, 256, num_layers=1, bidirectional=False,
+        self.rnn_3 = RNNBlock(self.activation, 128, 256, 256, num_layers=1, bidirectional=False,
                               dropout=0.0)
-        self.rnn_4 = RNNBlock(F.relu, 256, 256, 256, num_layers=2, bidirectional=False,
+        self.rnn_4 = RNNBlock(self.activation, 256, 256, 256, num_layers=2, bidirectional=False,
                               dropout=0.0)
 
         self.flatten = nn.Flatten()
 
-        self.linear_1 = nn.Linear(2304, 4096)
-        self.linear_2 = nn.Linear(4096, 8192)
-        # self.linear_3 = nn.Linear(8192, 16384)
-        self.linear_4 = nn.Linear(8192, 39901)
+        self.mlp = MLPBlock(self.activation, dropout=0.0,
+                            use_norm=False)
 
-        self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=1)
         self.drop_02 = nn.Dropout(0.2)
         self.drop_05 = nn.Dropout(0.5)
 
-        self.city_embedding = nn.Embedding(39901, 1)
+        self.city_embedding = nn.Embedding(10276, 1)
         self.country_embedding = nn.Embedding(195, 1)
 
     def forward(self, X):
@@ -215,36 +148,10 @@ class CityBlock(nn.Module):
 
         X = self.flatten(X)
 
-        X = self.linear_1(X)
-        X = self.relu(X)
-        # X = self.drop_05(X)
+        X = self.mlp(X)
 
-        X = self.linear_2(X)
-        X = self.relu(X)
-
-        # X = self.linear_3(X)
-        # X = self.relu(X)
-
-        X = self.linear_4(X)
+        X = X
 
         X = self.softmax(X)
 
         return X
-
-
-class Model(nn.Module):
-    def __init__(self):
-        super(Model, self).__init__()
-        self.country_block = CountryBlock()
-        self.city_block = CityBlock()
-
-    def forward(self, X):
-        country = self.country_block(X)
-
-        country_argmax = torch.argmax(country, dim=1, keepdim=True)
-
-        X = torch.cat((X, country_argmax), dim=1)
-
-        city = self.city_block(X)
-
-        return country, city

@@ -8,6 +8,8 @@
 
 #### Doubling amount of input data by reversing the order of the sequences
 
+#### Removing cities that appear less than X amount of times
+
 ### 3. Liu, Qiao, et al. "STAMP: Short-Term Attention/Memory Priority Model for Session-based Recommendation." KDD 2018, August 19-23, 2018, London, United Kingdom.
 
 #### tridirectional composition

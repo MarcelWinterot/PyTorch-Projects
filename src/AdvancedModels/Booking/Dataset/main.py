@@ -8,6 +8,32 @@ train_df = pd.read_csv('./src/AdvancedModels/Booking/Dataset/train_set.csv')
 train_df = train_df.sort_values(['utrip_id', 'checkin'])
 
 
+def cities_less_than_x(df, x):
+    city_counts = df['city_id'].value_counts()
+
+    less_than_x_cities = city_counts[city_counts < x]
+
+    print(
+        f"Number of cities with less than {x} visits: {len(less_than_x_cities)}, {len(less_than_x_cities) * (x - 1)}")
+
+
+for i in range(1, 11):
+    cities_less_than_x(train_df, i)
+
+
+def remove_cities_less_than_x(df, x):
+    city_counts = df['city_id'].value_counts()
+
+    less_than_x_cities = city_counts[city_counts < x]
+
+    df = df[~df['city_id'].isin(less_than_x_cities.index)]
+
+    return df
+
+
+train_df = remove_cities_less_than_x(train_df, 9)
+
+
 def double_data_by_reversing_trips(train_df):
     reversed_df = train_df.copy()
     reversed_df = reversed_df.sort_values(['utrip_id', 'checkin'])
