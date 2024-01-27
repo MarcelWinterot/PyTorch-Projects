@@ -51,9 +51,9 @@ class MLPBlock(nn.Module):
         self.linear_3 = nn.Linear(8192, 10276)
 
         if use_norm:
-            self.norm_1 = nn.LayerNorm(4096)
-            self.norm_2 = nn.LayerNorm(8192)
-            self.norm_3 = nn.LayerNorm(10276)
+            self.norm_1 = nn.BatchNorm1d(9)
+            self.norm_2 = nn.BatchNorm1d(9)
+            self.norm_3 = nn.BatchNorm1d(9)
 
         self.drop = nn.Dropout(dropout)
 
@@ -73,11 +73,6 @@ class MLPBlock(nn.Module):
             X = self.norm_2(X)
 
         X = self.linear_3(X)
-        # X = self.activation(X)
-        # X = self.drop(X)
-
-        # if self.use_norm:
-        #     X = self.norm_3(X)
 
         return X
 
@@ -110,16 +105,25 @@ class BilinearComposition(nn.Module):
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.activation = F.relu
+        self.activation = nn.PReLU()
 
-        self.rnn_1 = RNNBlock(self.activation, 1, 32, 64, num_layers=1, bidirectional=False,
-                              dropout=0.0)
-        self.rnn_2 = RNNBlock(self.activation, 64, 96, 128, num_layers=1, bidirectional=False,
-                              dropout=0.0)
-        self.rnn_3 = RNNBlock(self.activation, 128, 256, 256, num_layers=1, bidirectional=False,
-                              dropout=0.0)
-        self.rnn_4 = RNNBlock(self.activation, 256, 256, 256, num_layers=2, bidirectional=False,
-                              dropout=0.0)
+        self.rnn_1 = RNNBlock(self.activation, 1, 32, 64, num_layers=1, bidirectional=True,
+                              dropout=0.0, use_norm=False)
+        self.rnn_2 = RNNBlock(self.activation, 64, 96, 128, num_layers=1, bidirectional=True,
+                              dropout=0.0, use_norm=False)
+        self.rnn_3 = RNNBlock(self.activation, 128, 256, 256, num_layers=1, bidirectional=True,
+                              dropout=0.0, use_norm=False)
+        self.rnn_4 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
+                              dropout=0.0, use_norm=False)
+        self.rnn_5 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
+                              dropout=0.0, use_norm=False)
+        self.rnn_6 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
+                              dropout=0.0, use_norm=False)
+        self.rnn_7 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
+                              dropout=0.0, use_norm=False)
+
+        self.rnns = nn.ModuleList(
+            [self.rnn_1, self.rnn_2, self.rnn_3, self.rnn_4, self.rnn_5, self.rnn_6, self.rnn_7])
 
         self.flatten = nn.Flatten()
 
@@ -138,13 +142,8 @@ class Model(nn.Module):
         X[:, 1] = self.country_embedding(X[:, 1].long()).squeeze(2)
         X[:, 2] = self.country_embedding(X[:, 2].long()).squeeze(2)
 
-        X = self.rnn_1(X)
-
-        X = self.rnn_2(X)
-
-        X = self.rnn_3(X)
-
-        X = self.rnn_4(X)
+        for rnn in self.rnns:
+            X = rnn(X)
 
         X = self.flatten(X)
 
