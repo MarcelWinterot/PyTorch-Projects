@@ -4,8 +4,11 @@ import pandas as pd
 
 
 train_df = pd.read_csv('./src/AdvancedModels/Booking/Dataset/train_set.csv')
+test_df = pd.read_csv('./src/AdvancedModels/Booking/Dataset/test_set.csv')
 
-train_df = train_df.sort_values(['utrip_id', 'checkin'])
+df = pd.concat([train_df, test_df])
+
+df = df.sort_values(['utrip_id', 'checkin'])
 
 
 def cities_less_than_x(df, x):
@@ -18,7 +21,7 @@ def cities_less_than_x(df, x):
 
 
 for i in range(1, 11):
-    cities_less_than_x(train_df, i)
+    cities_less_than_x(df, i)
 
 
 def remove_cities_less_than_x(df, x):
@@ -31,11 +34,11 @@ def remove_cities_less_than_x(df, x):
     return df
 
 
-train_df = remove_cities_less_than_x(train_df, 9)
+df = remove_cities_less_than_x(df, 9)
 
 
-def double_data_by_reversing_trips(train_df):
-    reversed_df = train_df.copy()
+def double_data_by_reversing_trips(df):
+    reversed_df = df.copy()
     reversed_df = reversed_df.sort_values(['utrip_id', 'checkin'])
     reversed_df['city_id'] = reversed_df.groupby(
         'utrip_id')['city_id'].transform(lambda x: x[::-1])
@@ -44,23 +47,23 @@ def double_data_by_reversing_trips(train_df):
     reversed_df['booker_country'] = reversed_df.groupby(
         'utrip_id')['booker_country'].transform(lambda x: x[::-1])
 
-    train_df = pd.concat([train_df, reversed_df])
+    df = pd.concat([df, reversed_df])
 
-    return train_df
-
-
-# train_df = double_data_by_reversing_trips(train_df)
+    return df
 
 
-train_df['next_hotel_country'] = train_df.groupby(
+# df = double_data_by_reversing_trips(df)
+
+
+df['next_hotel_country'] = df.groupby(
     'utrip_id')['hotel_country'].shift(-1)
-train_df['next_city_id'] = train_df.groupby('utrip_id')['city_id'].shift(-1)
+df['next_city_id'] = df.groupby('utrip_id')['city_id'].shift(-1)
 
-train_df = train_df.dropna(subset=['next_hotel_country', 'next_city_id'])
+df = df.dropna(subset=['next_hotel_country', 'next_city_id'])
 
-X = train_df[['checkin', 'checkout', 'city_id',
-              'hotel_country', 'booker_country']]
-y = train_df[['next_hotel_country', 'next_city_id']]
+X = df[['checkin', 'checkout', 'city_id',
+        'hotel_country', 'booker_country']]
+y = df[['next_hotel_country', 'next_city_id']]
 
 
 def process_time(X):

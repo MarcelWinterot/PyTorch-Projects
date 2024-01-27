@@ -48,7 +48,7 @@ class MLPBlock(nn.Module):
 
         self.linear_1 = nn.Linear(2304, 4096)
         self.linear_2 = nn.Linear(4096, 8192)
-        self.linear_3 = nn.Linear(8192, 10276)
+        self.linear_3 = nn.Linear(8192, 11987)
 
         if use_norm:
             self.norm_1 = nn.BatchNorm1d(9)
@@ -81,23 +81,24 @@ class BilinearComposition(nn.Module):
     def __init__(self, activation, dropout=0.0, use_norm=True):
         super(BilinearComposition, self).__init__()
         self.mlp_1 = MLPBlock(activation, dropout, use_norm)
-        self.mlp_2 = MLPBlock(activation, dropout, use_norm)
 
-        self.weights = nn.Parameter(torch.randn(10276, 10276))
-        self.biases = nn.Parameter(torch.randn(10276))
+        self.weights = nn.Parameter(torch.randn(11987, 11987))
+        self.biases = nn.Parameter(torch.randn(11987))
 
         nn.init.xavier_normal_(self.weights)
         nn.init.constant_(self.biases, 0.0)
 
-    def forward(self, X):
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, X, X_3):
         X_1 = self.mlp_1(X)
-        X_2 = self.mlp_2(X)
 
         X = torch.matmul(X_1, self.weights)
-        X = X * X_2
+
+        X = X * X_3
         X = X + self.biases
 
-        X = F.softmax(X)
+        X = self.softmax(X)
 
         return X
 
@@ -117,27 +118,28 @@ class Model(nn.Module):
                               dropout=0.0, use_norm=False)
         self.rnn_5 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
                               dropout=0.0, use_norm=False)
-        self.rnn_6 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
-        self.rnn_7 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
 
         self.rnns = nn.ModuleList(
-            [self.rnn_1, self.rnn_2, self.rnn_3, self.rnn_4, self.rnn_5, self.rnn_6, self.rnn_7])
+            [self.rnn_1, self.rnn_2, self.rnn_3, self.rnn_4, self.rnn_5])
 
         self.flatten = nn.Flatten()
 
-        self.mlp = MLPBlock(self.activation, dropout=0.0,
-                            use_norm=False)
+        # self.mlp = MLPBlock(self.activation, dropout=0.0,
+        #                     use_norm=False)
+
+        self.bilinear = BilinearComposition(self.activation, dropout=0.0,
+                                            use_norm=False)
 
         self.softmax = nn.Softmax(dim=1)
         self.drop_02 = nn.Dropout(0.2)
         self.drop_05 = nn.Dropout(0.5)
 
-        self.city_embedding = nn.Embedding(10276, 1)
+        self.city_embedding = nn.Embedding(11987, 1)
         self.country_embedding = nn.Embedding(195, 1)
 
     def forward(self, X):
+        cities = F.one_hot(X[:, 0].long(), num_classes=11987).squeeze(1)
+
         X[:, 0] = self.city_embedding(X[:, 0].long()).squeeze(2)
         X[:, 1] = self.country_embedding(X[:, 1].long()).squeeze(2)
         X[:, 2] = self.country_embedding(X[:, 2].long()).squeeze(2)
@@ -147,10 +149,10 @@ class Model(nn.Module):
 
         X = self.flatten(X)
 
-        X = self.mlp(X)
+        # X = self.mlp(X)
 
-        X = X
+        # X = self.softmax(X)
 
-        X = self.softmax(X)
+        X = self.bilinear(X, cities)
 
         return X
