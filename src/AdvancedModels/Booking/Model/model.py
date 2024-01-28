@@ -90,12 +90,12 @@ class BilinearComposition(nn.Module):
 
         self.softmax = nn.Softmax(dim=1)
 
-    def forward(self, X, X_3):
+    def forward(self, X, X_2):
         X_1 = self.mlp_1(X)
 
         X = torch.matmul(X_1, self.weights)
 
-        X = X * X_3
+        X = X * X_2
         X = X + self.biases
 
         X = self.softmax(X)
@@ -107,17 +107,18 @@ class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
         self.activation = nn.PReLU()
+        self.rnn_norm = False
 
         self.rnn_1 = RNNBlock(self.activation, 1, 32, 64, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
+                              dropout=0.0, use_norm=self.rnn_norm)
         self.rnn_2 = RNNBlock(self.activation, 64, 96, 128, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
+                              dropout=0.0, use_norm=self.rnn_norm)
         self.rnn_3 = RNNBlock(self.activation, 128, 256, 256, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
+                              dropout=0.0, use_norm=self.rnn_norm)
         self.rnn_4 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
+                              dropout=0.0, use_norm=self.rnn_norm)
         self.rnn_5 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
-                              dropout=0.0, use_norm=False)
+                              dropout=0.0, use_norm=self.rnn_norm)
 
         self.rnns = nn.ModuleList(
             [self.rnn_1, self.rnn_2, self.rnn_3, self.rnn_4, self.rnn_5])
