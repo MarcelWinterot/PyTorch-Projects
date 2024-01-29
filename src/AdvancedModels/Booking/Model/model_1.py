@@ -1,43 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-class RNNBlock(nn.Module):
-    def __init__(self, activation, in_channels, in_between_channels, out_channels, num_layers=1, bidirectional=False, dropout=0.0, use_norm=True):
-        super(RNNBlock, self).__init__()
-        self.activation = activation
-        self.use_norm = use_norm
-
-        if bidirectional:
-            self.lstm = nn.LSTM(
-                in_channels, in_between_channels // 2, num_layers, batch_first=True, bidirectional=bidirectional)
-            self.gru = nn.GRU(
-                in_between_channels, out_channels // 2, num_layers, batch_first=True, bidirectional=bidirectional)
-        else:
-            self.lstm = nn.LSTM(
-                in_channels, in_between_channels, num_layers, batch_first=True, bidirectional=bidirectional)
-            self.gru = nn.GRU(
-                in_between_channels, out_channels, num_layers, batch_first=True, bidirectional=bidirectional)
-
-        if use_norm:
-            self.norm = nn.LayerNorm(out_channels)
-
-        self.drop = nn.Dropout(dropout)
-
-    def forward(self, X):
-        X, _ = self.lstm(X)
-        X = self.activation(X)
-        X = self.drop(X)
-
-        X, _ = self.gru(X)
-        X = self.activation(X)
-        X = self.drop(X)
-
-        if self.use_norm:
-            X = self.norm(X)
-
-        return X
+from Model.utils import BilinearComposition
 
 
 class MLPBlock(nn.Module):
@@ -77,35 +41,47 @@ class MLPBlock(nn.Module):
         return X
 
 
-class BilinearComposition(nn.Module):
-    def __init__(self, activation, dropout=0.0, use_norm=True):
-        super(BilinearComposition, self).__init__()
-        self.mlp_1 = MLPBlock(activation, dropout, use_norm)
+class RNNBlock(nn.Module):
+    def __init__(self, activation, in_channels, in_between_channels, out_channels, num_layers=1, bidirectional=False, dropout=0.0, use_norm=True):
+        super(RNNBlock, self).__init__()
+        self.activation = activation
+        self.use_norm = use_norm
 
-        self.weights = nn.Parameter(torch.randn(11987, 11987))
-        self.biases = nn.Parameter(torch.randn(11987))
+        if bidirectional:
+            self.lstm = nn.LSTM(
+                in_channels, in_between_channels // 2, num_layers, batch_first=True, bidirectional=bidirectional)
+            self.gru = nn.GRU(
+                in_between_channels, out_channels // 2, num_layers, batch_first=True, bidirectional=bidirectional)
+        else:
+            self.lstm = nn.LSTM(
+                in_channels, in_between_channels, num_layers, batch_first=True, bidirectional=bidirectional)
+            self.gru = nn.GRU(
+                in_between_channels, out_channels, num_layers, batch_first=True, bidirectional=bidirectional)
 
-        nn.init.xavier_normal_(self.weights)
-        nn.init.constant_(self.biases, 0.0)
+        if use_norm:
+            self.norm = nn.LayerNorm(out_channels)
 
-        self.softmax = nn.Softmax(dim=1)
+        self.drop = nn.Dropout(dropout)
 
-    def forward(self, X, X_2):
-        X_1 = self.mlp_1(X)
+    def forward(self, X):
+        X, _ = self.lstm(X)
+        X = self.activation(X)
+        X = self.drop(X)
 
-        X = torch.matmul(X_1, self.weights)
+        X, _ = self.gru(X)
+        X = self.activation(X)
+        X = self.drop(X)
 
-        X = X * X_2
-        X = X + self.biases
-
-        X = self.softmax(X)
+        if self.use_norm:
+            X = self.norm(X)
 
         return X
 
 
-class Model(nn.Module):
+class Model_1(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super(Model_1, self).__init__()
+        # Simple RNN using Bidirectional LSTM GRU
         self.activation = nn.PReLU()
         self.rnn_norm = False
 
@@ -125,10 +101,7 @@ class Model(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        # self.mlp = MLPBlock(self.activation, dropout=0.0,
-        #                     use_norm=False)
-
-        self.bilinear = BilinearComposition(self.activation, dropout=0.0,
+        self.bilinear = BilinearComposition(self.activation, MLPBlock, dropout=0.0,
                                             use_norm=False)
 
         self.softmax = nn.Softmax(dim=1)
@@ -149,10 +122,6 @@ class Model(nn.Module):
             X = rnn(X)
 
         X = self.flatten(X)
-
-        # X = self.mlp(X)
-
-        # X = self.softmax(X)
 
         X = self.bilinear(X, cities)
 
