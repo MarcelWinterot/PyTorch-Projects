@@ -62,7 +62,7 @@ df['next_city_id'] = df.groupby('utrip_id')['city_id'].shift(-1)
 df = df.dropna(subset=['next_hotel_country', 'next_city_id'])
 
 X = df[['checkin', 'checkout', 'city_id',
-        'hotel_country', 'booker_country']]
+        'hotel_country', 'booker_country', 'affiliate_id', 'device_class']]
 y = df[['next_hotel_country', 'next_city_id']]
 
 
@@ -105,6 +105,18 @@ def process_time(X):
 
 
 X = process_time(X)
+
+
+def process_device(X):
+    device_encoder = LabelEncoder()
+    X['device_class'] = device_encoder.fit_transform(X['device_class'])
+
+    print(X['device_class'].max())
+
+    return X
+
+
+X = process_device(X)
 
 
 def process_countries(X, y):

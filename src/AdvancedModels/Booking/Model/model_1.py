@@ -67,8 +67,8 @@ class Model_1(nn.Module):
 
         self.mlp = MLPBlock(self.activation, dropout=self.drop,
                             use_norm=False, last_layer=False)
-        self.bilinear = BilinearComposition(self.activation, dropout=self.drop,
-                                            use_norm=False)
+
+        self.bilinear = BilinearComposition()
 
         self.softmax = nn.Softmax(dim=1)
         self.drop_02 = nn.Dropout(0.2)
@@ -76,6 +76,8 @@ class Model_1(nn.Module):
 
         self.city_embedding = nn.Embedding(11987, 1)
         self.country_embedding = nn.Embedding(195, 1)
+        self.affiliate_embedding = nn.Embedding(10698, 1)
+        self.device_embedding = nn.Embedding(3, 1)
 
     def forward(self, X):
         cities = F.one_hot(X[:, 0].long(), num_classes=11987).squeeze(1)
@@ -83,6 +85,8 @@ class Model_1(nn.Module):
         X[:, 0] = self.city_embedding(X[:, 0].long()).squeeze(2)
         X[:, 1] = self.country_embedding(X[:, 1].long()).squeeze(2)
         X[:, 2] = self.country_embedding(X[:, 2].long()).squeeze(2)
+        X[:, 3] = self.affiliate_embedding(X[:, 3].long()).squeeze(2)
+        X[:, 4] = self.device_embedding(X[:, 4].long()).squeeze(2)
 
         for rnn in self.rnns:
             X = rnn(X)

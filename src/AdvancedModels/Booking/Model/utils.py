@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class BilinearComposition(nn.Module):
-    def __init__(self, activation, dropout=0.0, use_norm=True):
+    def __init__(self):
         super(BilinearComposition, self).__init__()
         self.weights = nn.Parameter(torch.randn(11987, 11987))
         self.biases = nn.Parameter(torch.randn(11987))
@@ -18,6 +18,7 @@ class BilinearComposition(nn.Module):
         X = torch.matmul(X, self.weights)
 
         X = X * X_2
+
         X = X + self.biases
 
         X = self.softmax(X)
@@ -32,7 +33,7 @@ class MLPBlock(nn.Module):
         self.use_norm = use_norm
         self.last_layer = last_layer
 
-        self.linear_1 = nn.Linear(2304, 4096)
+        self.linear_1 = nn.Linear(2816, 4096)
         self.linear_2 = nn.Linear(4096, 8192)
         self.linear_3 = nn.Linear(8192, 11987)
 

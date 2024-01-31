@@ -33,9 +33,8 @@ class Model_2(nn.Module):
             d_model, n_heads, d_ff, activation=self.activation, batch_first=True), num_decoder_layers)
 
         self.mlp = MLPBlock(self.activation, dropout=0.0,
-                            use_norm=False, last_layer=F)
-        self.bilinear = BilinearComposition(
-            self.activation, use_norm=False)
+                            use_norm=False, last_layer=False)
+        self.bilinear = BilinearComposition()
 
         self.flatten = nn.Flatten()
 
@@ -43,6 +42,8 @@ class Model_2(nn.Module):
 
         self.city_embedding = nn.Embedding(11987, 1)
         self.country_embedding = nn.Embedding(195, 1)
+        self.affiliate_embedding = nn.Embedding(10698, 1)
+        self.device_embedding = nn.Embedding(3, 1)
 
     def forward(self, X):
         cities = F.one_hot(
@@ -51,6 +52,8 @@ class Model_2(nn.Module):
         X[:, 0] = self.city_embedding(X[:, 0].long()).squeeze(2)
         X[:, 1] = self.country_embedding(X[:, 1].long()).squeeze(2)
         X[:, 2] = self.country_embedding(X[:, 2].long()).squeeze(2)
+        X[:, 3] = self.affiliate_embedding(X[:, 3].long()).squeeze(2)
+        X[:, 4] = self.device_embedding(X[:, 4].long()).squeeze(2)
 
         for layer in self.rnns:
             X, _ = layer(X)
