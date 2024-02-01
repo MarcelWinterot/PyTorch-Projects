@@ -68,8 +68,6 @@ class Model_1(nn.Module):
         self.mlp = MLPBlock(self.activation, dropout=self.drop,
                             use_norm=False, last_layer=False)
 
-        self.bilinear = BilinearComposition()
-
         self.softmax = nn.Softmax(dim=1)
         self.drop_02 = nn.Dropout(0.2)
         self.drop_05 = nn.Dropout(0.5)
@@ -79,9 +77,11 @@ class Model_1(nn.Module):
         self.affiliate_embedding = nn.Embedding(10698, 1)
         self.device_embedding = nn.Embedding(3, 1)
 
-    def forward(self, X):
-        cities = F.one_hot(X[:, 0].long(), num_classes=11987).squeeze(1)
+        self.output_bias = nn.Parameter(torch.zeros(11987))
+        self.output_bias.data.normal_(0, 0.01)
 
+    def forward(self, X):
+        # cities = F.one_hot(X[:, 0].long(), num_classes=11987).squeeze(1)
         X[:, 0] = self.city_embedding(X[:, 0].long()).squeeze(2)
         X[:, 1] = self.country_embedding(X[:, 1].long()).squeeze(2)
         X[:, 2] = self.country_embedding(X[:, 2].long()).squeeze(2)
@@ -95,6 +95,6 @@ class Model_1(nn.Module):
 
         X = self.mlp(X)
 
-        X = self.bilinear(X, cities)
+        X = X * self.city_embedding.weight.T + self.output_bias
 
         return X

@@ -65,4 +65,7 @@ class MLPBlock(nn.Module):
             X = self.activation(X)
             X = self.drop(X)
 
+            if self.use_norm:
+                X = self.norm_3(X)
+
         return X
