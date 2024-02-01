@@ -12,4 +12,4 @@
 
 ### 1. [CIFAR100](https://github.com/MarcelWinterot/learning-pytorch/tree/main/src/AdvancedModels/CIFAR100)
 
-### 2. [Booking Challenge](https://github.com/MarcelWinterot/learning-pytorch/tree/main/src/AdvancedModels/Booking)
+### 2. [WSDM 2021](https://github.com/MarcelWinterot/learning-pytorch/tree/main/src/AdvancedModels/Booking)
