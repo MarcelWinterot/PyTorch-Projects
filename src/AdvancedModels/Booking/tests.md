@@ -34,8 +34,26 @@ self.bidirectional = True
 batch_size = 2048
 ```
 
-## Tests I'd like to perform but don't have resourses to do so
+### 3. Using transformer with batch_size 512
 
-### 1. Increasing batch_size to 4096/8192 for Model_1
+#### Didn't work, the accuracy decreased and training time increased to 1h/epoch
 
-### 2. Changing the model to the transformer version with batch size of 4096/8192
+### 4. Increasing batch_size to 4096 for Model_1
+
+#### Didn.t work, the accuracy didn't increase from 3%
+
+### 5. Increasing number of RNN blocks and adding RNN normalization
+
+#### Didn't work. The model's performance decreased during training
+
+### 6. Using an embedding for each parameter
+
+#### Similar results to not using embeddings for dates
+
+### 7. Using AdamW optimizer with LRS
+
+#### TODO
+
+### 8. Decreasing the batch_size
+
+#### TODO

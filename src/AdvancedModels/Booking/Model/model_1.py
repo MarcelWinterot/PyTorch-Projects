@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from Model.utils import BilinearComposition, MLPBlock
+from Model.utils import MLPBlock
 
 
 class RNNBlock(nn.Module):
@@ -47,20 +47,23 @@ class Model_1(nn.Module):
         # Simple RNN using Bidirectional LSTM GRU
         self.activation = nn.PReLU()
         self.rnn_norm = False
-        self.drop = 0.0
+        self.rnn_drop = 0.0
         self.max_time_features = 256
         self.rnns_with_max_time_features = 2
         self.bidirectional = True
 
+        self.mlp_norm = False
+        self.mlp_drop = 0.0
+
         self.rnn_1 = RNNBlock(self.activation, 1, 32, 64, num_layers=1, bidirectional=self.bidirectional,
-                              dropout=self.drop, use_norm=self.rnn_norm)
+                              dropout=self.rnn_drop, use_norm=self.rnn_norm)
         self.rnn_2 = RNNBlock(self.activation, 64, 96, 128, num_layers=1, bidirectional=self.bidirectional,
-                              dropout=self.drop, use_norm=self.rnn_norm)
+                              dropout=self.rnn_drop, use_norm=self.rnn_norm)
         self.rnn_3 = RNNBlock(self.activation, 128, 256, self.max_time_features, num_layers=1, bidirectional=self.bidirectional,
-                              dropout=self.drop, use_norm=self.rnn_norm)
+                              dropout=self.rnn_drop, use_norm=self.rnn_norm)
         for i in range(self.rnns_with_max_time_features):
             setattr(self, f"rnn_{i+4}", RNNBlock(
-                self.activation, self.max_time_features, self.max_time_features, self.max_time_features, num_layers=1, bidirectional=self.bidirectional, dropout=self.drop, use_norm=self.rnn_norm))
+                self.activation, self.max_time_features, self.max_time_features, self.max_time_features, num_layers=1, bidirectional=self.bidirectional, dropout=self.rnn_drop, use_norm=self.rnn_norm))
 
         self.rnns = nn.ModuleList(
             [self.rnn_1, self.rnn_2, self.rnn_3, *[
@@ -69,8 +72,8 @@ class Model_1(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        self.mlp = MLPBlock(self.activation, dropout=self.drop,
-                            use_norm=False, last_layer=False)
+        self.mlp = MLPBlock(self.activation, dropout=self.mlp_norm,
+                            use_norm=self.mlp_norm, last_layer=False, num_channels=self.max_time_features)
 
         self.softmax = nn.Softmax(dim=1)
         self.drop_02 = nn.Dropout(0.2)
@@ -80,6 +83,9 @@ class Model_1(nn.Module):
         self.country_embedding = nn.Embedding(195, 1)
         self.affiliate_embedding = nn.Embedding(10698, 1)
         self.device_embedding = nn.Embedding(3, 1)
+        self.year_embedding = nn.Embedding(3, 1)
+        self.month_embedding = nn.Embedding(12, 1)
+        self.day_embedding = nn.Embedding(31, 1)
 
         self.output_bias = nn.Parameter(torch.zeros(11988))
 
@@ -89,6 +95,12 @@ class Model_1(nn.Module):
         X[:, 2] = self.country_embedding(X[:, 2].long()).squeeze(2)
         X[:, 3] = self.affiliate_embedding(X[:, 3].long()).squeeze(2)
         X[:, 4] = self.device_embedding(X[:, 4].long()).squeeze(2)
+        X[:, 5] = self.year_embedding(X[:, 5].long()).squeeze(2)
+        X[:, 6] = self.month_embedding(X[:, 6].long()).squeeze(2)
+        X[:, 7] = self.day_embedding(X[:, 7].long()).squeeze(2)
+        X[:, 8] = self.year_embedding(X[:, 8].long()).squeeze(2)
+        X[:, 9] = self.month_embedding(X[:, 9].long()).squeeze(2)
+        X[:, 10] = self.day_embedding(X[:, 10].long()).squeeze(2)
 
         for rnn in self.rnns:
             X = rnn(X)

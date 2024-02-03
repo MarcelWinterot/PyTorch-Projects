@@ -1,9 +1,6 @@
 import torch
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 
-# try:
-# import cudf as pd
-# except ImportError:
 import pandas as pd
 
 
@@ -81,27 +78,29 @@ def process_time(X):
     X['checkout_month'] = datetime.dt.month
     X['checkout_day'] = datetime.dt.day
 
-    YearScaler = MinMaxScaler()
-    MonthScaler = MinMaxScaler()
-    DayScaler = MinMaxScaler()
+    YearEncoder = LabelEncoder()
 
-    X['checkin_year'] = YearScaler.fit_transform(
-        X['checkin_year'].values.reshape(-1, 1))
+    years = pd.concat([X['checkin_year'], X['checkout_year']])
+    YearEncoder.fit(years)
 
-    X['checkin_month'] = MonthScaler.fit_transform(
-        X['checkin_month'].values.reshape(-1, 1))
+    X['checkin_year'] = YearEncoder.transform(X['checkin_year'])
+    X['checkout_year'] = YearEncoder.transform(X['checkout_year'])
 
-    X['checkin_day'] = DayScaler.fit_transform(
-        X['checkin_day'].values.reshape(-1, 1))
+    MonthEncoder = LabelEncoder()
 
-    X['checkout_year'] = YearScaler.transform(
-        X['checkout_year'].values.reshape(-1, 1))
+    months = pd.concat([X['checkin_month'], X['checkout_month']])
+    MonthEncoder.fit(months)
 
-    X['checkout_month'] = MonthScaler.transform(
-        X['checkout_month'].values.reshape(-1, 1))
+    X['checkin_month'] = MonthEncoder.transform(X['checkin_month'])
+    X['checkout_month'] = MonthEncoder.transform(X['checkout_month'])
 
-    X['checkout_day'] = DayScaler.transform(
-        X['checkout_day'].values.reshape(-1, 1))
+    DayEncoder = LabelEncoder()
+
+    days = pd.concat([X['checkin_day'], X['checkout_day']])
+    DayEncoder.fit(days)
+
+    X['checkin_day'] = DayEncoder.transform(X['checkin_day'])
+    X['checkout_day'] = DayEncoder.transform(X['checkout_day'])
 
     X = X.drop(['checkin', 'checkout'], axis=1)
 

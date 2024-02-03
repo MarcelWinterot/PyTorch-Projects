@@ -13,11 +13,11 @@ class Model_2(nn.Module):
 
         self.activation = nn.PReLU()
 
-        num_encoder_layers = 6
-        num_decoder_layers = 6
-        d_model = 256
-        n_heads = 8
-        d_ff = 2048
+        self.num_encoder_layers = 6
+        self.num_decoder_layers = 6
+        self.d_model = 256
+        self.n_heads = 8
+        self.d_ff = 2048
 
         self.rnn_1 = nn.LSTM(1, 64, batch_first=True)
         self.rnn_2 = nn.LSTM(64, 128, batch_first=True)
@@ -27,10 +27,10 @@ class Model_2(nn.Module):
             [self.rnn_1, self.rnn_2, self.rnn_3])
 
         self.encoder = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model, n_heads, d_ff, activation=self.activation, batch_first=True), num_encoder_layers)
+            nn.TransformerEncoderLayer(self.d_model, self.n_heads, self.d_ff, activation=self.activation, batch_first=True), self.num_encoder_layers)
 
         self.decoder = nn.TransformerDecoder(nn.TransformerDecoderLayer(
-            d_model, n_heads, d_ff, activation=self.activation, batch_first=True), num_decoder_layers)
+            self.d_model, self.n_heads, self.d_ff, activation=self.activation, batch_first=True), self.num_decoder_layers)
 
         self.mlp = MLPBlock(self.activation, dropout=0.0,
                             use_norm=False, last_layer=False)
@@ -40,12 +40,12 @@ class Model_2(nn.Module):
 
         self.softmax = nn.Softmax(dim=1)
 
-        self.city_embedding = nn.Embedding(11987, 1)
+        self.city_embedding = nn.Embedding(11988, 1)
         self.country_embedding = nn.Embedding(195, 1)
         self.affiliate_embedding = nn.Embedding(10698, 1)
         self.device_embedding = nn.Embedding(3, 1)
 
-        self.output_bias = nn.Parameter(torch.zeros(11987))
+        self.output_bias = nn.Parameter(torch.zeros(11988))
         self.output_bias.data.normal_(0, 0.01)
 
     def forward(self, X):
