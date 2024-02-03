@@ -48,20 +48,24 @@ class Model_1(nn.Module):
         self.activation = nn.PReLU()
         self.rnn_norm = False
         self.drop = 0.0
+        self.max_time_features = 256
+        self.rnns_with_max_time_features = 2
+        self.bidirectional = True
 
-        self.rnn_1 = RNNBlock(self.activation, 1, 32, 64, num_layers=1, bidirectional=True,
+        self.rnn_1 = RNNBlock(self.activation, 1, 32, 64, num_layers=1, bidirectional=self.bidirectional,
                               dropout=self.drop, use_norm=self.rnn_norm)
-        self.rnn_2 = RNNBlock(self.activation, 64, 96, 128, num_layers=1, bidirectional=True,
+        self.rnn_2 = RNNBlock(self.activation, 64, 96, 128, num_layers=1, bidirectional=self.bidirectional,
                               dropout=self.drop, use_norm=self.rnn_norm)
-        self.rnn_3 = RNNBlock(self.activation, 128, 256, 256, num_layers=1, bidirectional=True,
+        self.rnn_3 = RNNBlock(self.activation, 128, 256, self.max_time_features, num_layers=1, bidirectional=self.bidirectional,
                               dropout=self.drop, use_norm=self.rnn_norm)
-        self.rnn_4 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
-                              dropout=self.drop, use_norm=self.rnn_norm)
-        self.rnn_5 = RNNBlock(self.activation, 256, 256, 256, num_layers=1, bidirectional=True,
-                              dropout=self.drop, use_norm=self.rnn_norm)
+        for i in range(self.rnns_with_max_time_features):
+            setattr(self, f"rnn_{i+4}", RNNBlock(
+                self.activation, self.max_time_features, self.max_time_features, self.max_time_features, num_layers=1, bidirectional=self.bidirectional, dropout=self.drop, use_norm=self.rnn_norm))
 
         self.rnns = nn.ModuleList(
-            [self.rnn_1, self.rnn_2, self.rnn_3, self.rnn_4, self.rnn_5])
+            [self.rnn_1, self.rnn_2, self.rnn_3, *[
+                getattr(self, f"rnn_{i+4}") for i in range(self.rnns_with_max_time_features)]
+             ])
 
         self.flatten = nn.Flatten()
 
@@ -72,16 +76,14 @@ class Model_1(nn.Module):
         self.drop_02 = nn.Dropout(0.2)
         self.drop_05 = nn.Dropout(0.5)
 
-        self.city_embedding = nn.Embedding(11987, 1)
+        self.city_embedding = nn.Embedding(11988, 1)
         self.country_embedding = nn.Embedding(195, 1)
         self.affiliate_embedding = nn.Embedding(10698, 1)
         self.device_embedding = nn.Embedding(3, 1)
 
-        self.output_bias = nn.Parameter(torch.zeros(11987))
-        self.output_bias.data.normal_(0, 0.01)
+        self.output_bias = nn.Parameter(torch.zeros(11988))
 
     def forward(self, X):
-        # cities = F.one_hot(X[:, 0].long(), num_classes=11987).squeeze(1)
         X[:, 0] = self.city_embedding(X[:, 0].long()).squeeze(2)
         X[:, 1] = self.country_embedding(X[:, 1].long()).squeeze(2)
         X[:, 2] = self.country_embedding(X[:, 2].long()).squeeze(2)

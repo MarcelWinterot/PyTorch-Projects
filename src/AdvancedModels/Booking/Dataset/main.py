@@ -1,5 +1,9 @@
 import torch
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+
+# try:
+# import cudf as pd
+# except ImportError:
 import pandas as pd
 
 
@@ -52,7 +56,7 @@ def double_data_by_reversing_trips(df):
     return df
 
 
-# df = double_data_by_reversing_trips(df)
+df = double_data_by_reversing_trips(df)
 
 
 df['next_hotel_country'] = df.groupby(

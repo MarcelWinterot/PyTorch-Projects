@@ -45,10 +45,10 @@ class Model_2(nn.Module):
         self.affiliate_embedding = nn.Embedding(10698, 1)
         self.device_embedding = nn.Embedding(3, 1)
 
-    def forward(self, X):
-        cities = F.one_hot(
-            X[:, 0].long(), num_classes=11987).squeeze(1).to(self.cpu)
+        self.output_bias = nn.Parameter(torch.zeros(11987))
+        self.output_bias.data.normal_(0, 0.01)
 
+    def forward(self, X):
         X[:, 0] = self.city_embedding(X[:, 0].long()).squeeze(2)
         X[:, 1] = self.country_embedding(X[:, 1].long()).squeeze(2)
         X[:, 2] = self.country_embedding(X[:, 2].long()).squeeze(2)
@@ -67,8 +67,6 @@ class Model_2(nn.Module):
 
         X = self.mlp(X)
 
-        X = self.bilinear(X, cities.to(self.gpu))
-
-        X = self.softmax(X)
+        X = X * self.city_embedding.weight.T + self.output_bias
 
         return X
