@@ -1,6 +1,5 @@
 import torch
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
-
 import pandas as pd
 
 
@@ -38,6 +37,15 @@ def remove_cities_less_than_x(df, x):
 df = remove_cities_less_than_x(df, 9)
 
 
+def city_number_in_trip(df):
+    df['city_number'] = df.groupby('utrip_id').cumcount() + 1
+
+    return df
+
+
+df = city_number_in_trip(df)
+
+
 def double_data_by_reversing_trips(df):
     reversed_df = df.copy()
     reversed_df = reversed_df.sort_values(['utrip_id', 'checkin'])
@@ -47,6 +55,8 @@ def double_data_by_reversing_trips(df):
         'utrip_id')['hotel_country'].transform(lambda x: x[::-1])
     reversed_df['booker_country'] = reversed_df.groupby(
         'utrip_id')['booker_country'].transform(lambda x: x[::-1])
+
+    reversed_df = city_number_in_trip(reversed_df)
 
     df = pd.concat([df, reversed_df])
 
@@ -63,8 +73,24 @@ df['next_city_id'] = df.groupby('utrip_id')['city_id'].shift(-1)
 df = df.dropna(subset=['next_hotel_country', 'next_city_id'])
 
 X = df[['checkin', 'checkout', 'city_id',
-        'hotel_country', 'booker_country', 'affiliate_id', 'device_class']]
+        'hotel_country', 'booker_country', 'affiliate_id', 'device_class', 'city_number', 'utrip_id']]
 y = df[['next_hotel_country', 'next_city_id']]
+
+
+def previous_cities(X, N):
+    cities = []
+
+    for i in range(1, N+1):
+        cities.append(X.groupby('utrip_id')['city_id'].shift(i))
+        cities[i-1] = cities[i-1].fillna(0)
+        X['previous_city_id_' + str(i)] = cities[i-1]
+
+    return X
+
+
+X = previous_cities(X, 4)
+
+X = X.drop('utrip_id', axis=1)
 
 
 def process_time(X):
@@ -149,13 +175,15 @@ def process_cities(X, y):
 
     X['city_id'] = all_cities_encoded[:len(X)]
     y['next_city_id'] = all_cities_encoded[-len(y):]
+    X['previous_city_id_1'] = city_encoder.transform(X['previous_city_id_1'])
+    X['previous_city_id_2'] = city_encoder.transform(X['previous_city_id_2'])
+    X['previous_city_id_3'] = city_encoder.transform(X['previous_city_id_3'])
+    X['previous_city_id_4'] = city_encoder.transform(X['previous_city_id_4'])
 
     return X, y
 
 
 X, y = process_cities(X, y)
-
-print(X.head())
 
 
 def process_y_data(y):
@@ -170,6 +198,8 @@ def process_y_data(y):
 
 
 y_city, y_country = process_y_data(y)
+
+print(X.head())
 
 X = torch.tensor(X.to_numpy())
 y_country = torch.tensor(y_country.to_numpy())

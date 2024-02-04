@@ -35,7 +35,7 @@ class MLPBlock(nn.Module):
         self.output_size = 11988
 
         if num_channels == 256:
-            self.linear_1 = nn.Linear(2816, 4096)
+            self.linear_1 = nn.Linear(4096, 4096)
             self.linear_2 = nn.Linear(4096, 8192)
             self.linear_3 = nn.Linear(8192, 11988)
 
