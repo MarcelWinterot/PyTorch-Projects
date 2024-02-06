@@ -27,39 +27,39 @@ class BilinearComposition(nn.Module):
 
 
 class MLPBlock(nn.Module):
-    def __init__(self, activation, dropout: float = 0.0, use_norm: bool = False, last_layer: bool = False, num_channels: int = 256) -> None:
+    def __init__(self, activation, dropout: float = 0.0, use_norm: bool = False, last_layer: bool = False, num_channels: int = 256, num_labels: int = 16) -> None:
         super(MLPBlock, self).__init__()
         self.activation = activation
         self.use_norm = use_norm
         self.last_layer = last_layer
-        self.output_size = 11988
+        self.output_size = 11989
 
         if num_channels == 256:
-            self.linear_1 = nn.Linear(4096, 4096)
-            self.linear_2 = nn.Linear(4096, 8192)
-            self.linear_3 = nn.Linear(8192, 11988)
+            # self.linear_1 = nn.Linear(4096, 4096)
+            self.linear_2 = nn.Linear(num_channels * num_labels, 8192)
+            self.linear_3 = nn.Linear(8192, 11989)
 
             self.linears = nn.ModuleList(
-                [self.linear_1, self.linear_2, self.linear_3])
+                [self.linear_2, self.linear_3])
 
             if use_norm:
-                self.norm_1 = nn.BatchNorm1d(4096)
+                # self.norm_1 = nn.BatchNorm1d(4096)
                 self.norm_2 = nn.BatchNorm1d(8192)
-                self.norm_3 = nn.BatchNorm1d(11988)
+                self.norm_3 = nn.BatchNorm1d(11989)
 
                 self.norms = nn.ModuleList(
-                    [self.norm_1, self.norm_2, self.norm_3])
+                    [self.norm_2, self.norm_3])
 
         elif num_channels == 512:
             self.linear_1 = nn.Linear(5632, 10000)
-            self.linear_2 = nn.Linear(10000, 11988)
+            self.linear_2 = nn.Linear(10000, 11989)
 
             self.linears = nn.ModuleList(
                 [self.linear_1, self.linear_2])
 
             if use_norm:
                 self.norm_1 = nn.BatchNorm1d(10000)
-                self.norm_2 = nn.BatchNorm1d(11988)
+                self.norm_2 = nn.BatchNorm1d(11989)
 
                 self.norms = nn.ModuleList(
                     [self.norm_1, self.norm_2])

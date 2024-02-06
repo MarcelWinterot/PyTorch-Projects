@@ -1,6 +1,7 @@
 import torch
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OrdinalEncoder
 import pandas as pd
+import numpy as np
 
 
 train_df = pd.read_csv('./src/AdvancedModels/Booking/Dataset/train_set.csv')
@@ -79,16 +80,22 @@ y = df[['next_hotel_country', 'next_city_id']]
 
 def previous_cities(X, N):
     cities = []
+    countries = []
 
     for i in range(1, N+1):
         cities.append(X.groupby('utrip_id')['city_id'].shift(i))
-        cities[i-1] = cities[i-1].fillna(0)
+        cities[i-1] = cities[i-1].fillna(-1)
         X['previous_city_id_' + str(i)] = cities[i-1]
+
+        countries.append(X.groupby('utrip_id')['hotel_country'].shift(i))
+        countries[i-1] = countries[i-1].fillna(-1)
+        X['previous_country_id_' + str(i)] = countries[i-1]
 
     return X
 
 
-X = previous_cities(X, 4)
+N = 4
+X = previous_cities(X, N)
 
 X = X.drop('utrip_id', axis=1)
 
@@ -149,16 +156,31 @@ X = process_device(X)
 
 
 def process_countries(X, y):
-    country_encoder = LabelEncoder()
+    country_encoder = OrdinalEncoder(handle_unknown='use_encoded_value',
+                                     unknown_value=-1)
+    new_encoder = LabelEncoder()
 
     all_countries = pd.concat(
         [X['hotel_country'], X['booker_country'], y['next_hotel_country']])
 
-    all_countries_encoded = country_encoder.fit_transform(all_countries)
+    all_countries_encoded = country_encoder.fit_transform(
+        all_countries.values.reshape(-1, 1))
+
+    for i in range(1, N+1):
+        X['previous_country_id_' + str(i)] = country_encoder.transform(
+            X['previous_country_id_' + str(i)].values.reshape(-1, 1))
+
+    all_countries_encoded = np.append(all_countries_encoded, -1)
+
+    all_countries_encoded = new_encoder.fit_transform(all_countries_encoded)
 
     X['hotel_country'] = all_countries_encoded[:len(X)]
     X['booker_country'] = all_countries_encoded[len(X):len(X)+len(y)]
     y['next_hotel_country'] = all_countries_encoded[-len(y):]
+
+    for i in range(1, N+1):
+        X['previous_country_id_' + str(i)] = new_encoder.transform(
+            X['previous_country_id_' + str(i)])
 
     return X, y
 
@@ -169,16 +191,19 @@ X, y = process_countries(X, y)
 def process_cities(X, y):
     city_encoder = LabelEncoder()
 
-    all_cities = pd.concat([X['city_id'], y['next_city_id']])
+    all_cities = pd.concat(
+        [X['city_id'], y['next_city_id']])
 
-    all_cities_encoded = city_encoder.fit_transform(all_cities)
+    all_cities = np.append(all_cities, -1)
 
-    X['city_id'] = all_cities_encoded[:len(X)]
-    y['next_city_id'] = all_cities_encoded[-len(y):]
-    X['previous_city_id_1'] = city_encoder.transform(X['previous_city_id_1'])
-    X['previous_city_id_2'] = city_encoder.transform(X['previous_city_id_2'])
-    X['previous_city_id_3'] = city_encoder.transform(X['previous_city_id_3'])
-    X['previous_city_id_4'] = city_encoder.transform(X['previous_city_id_4'])
+    city_encoder.fit(all_cities)
+
+    X['city_id'] = city_encoder.transform(X['city_id'])
+    y['next_city_id'] = city_encoder.transform(y['next_city_id'])
+
+    for i in range(1, N+1):
+        X['previous_city_id_' + str(i)] = city_encoder.transform(
+            X['previous_city_id_' + str(i)])
 
     return X, y
 

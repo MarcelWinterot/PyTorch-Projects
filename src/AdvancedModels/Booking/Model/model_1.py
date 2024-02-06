@@ -73,14 +73,14 @@ class Model_1(nn.Module):
         self.flatten = nn.Flatten()
 
         self.mlp = MLPBlock(self.activation, dropout=self.mlp_norm,
-                            use_norm=self.mlp_norm, last_layer=False, num_channels=self.max_time_features)
+                            use_norm=self.mlp_norm, last_layer=False, num_channels=self.max_time_features, num_labels=20)
 
         self.softmax = nn.Softmax(dim=1)
         self.drop_02 = nn.Dropout(0.2)
         self.drop_05 = nn.Dropout(0.5)
 
-        self.city_embedding = nn.Embedding(11988, 1)
-        self.country_embedding = nn.Embedding(195, 1)
+        self.city_embedding = nn.Embedding(11989, 1)
+        self.country_embedding = nn.Embedding(196, 1)
         self.affiliate_embedding = nn.Embedding(10698, 1)
         self.device_embedding = nn.Embedding(3, 1)
         self.city_number_embedding = nn.Embedding(49, 1)
@@ -88,7 +88,7 @@ class Model_1(nn.Module):
         self.month_embedding = nn.Embedding(12, 1)
         self.day_embedding = nn.Embedding(31, 1)
 
-        self.output_bias = nn.Parameter(torch.zeros(11988))
+        self.output_bias = nn.Parameter(torch.zeros(11989))
 
     def forward(self, X):
         X[:, 0] = self.city_embedding(X[:, 0].long()).squeeze(2)
@@ -97,16 +97,22 @@ class Model_1(nn.Module):
         X[:, 3] = self.affiliate_embedding(X[:, 3].long()).squeeze(2)
         X[:, 4] = self.device_embedding(X[:, 4].long()).squeeze(2)
         X[:, 5] = self.city_number_embedding(X[:, 5].long()).squeeze(2)
+
         X[:, 6] = self.city_embedding(X[:, 6].long()).squeeze(2)
-        X[:, 7] = self.city_embedding(X[:, 7].long()).squeeze(2)
+        X[:, 7] = self.country_embedding(X[:, 7].long()).squeeze(2)
         X[:, 8] = self.city_embedding(X[:, 8].long()).squeeze(2)
-        X[:, 9] = self.city_embedding(X[:, 9].long()).squeeze(2)
-        X[:, 10] = self.year_embedding(X[:, 10].long()).squeeze(2)
-        X[:, 11] = self.month_embedding(X[:, 11].long()).squeeze(2)
-        X[:, 12] = self.day_embedding(X[:, 12].long()).squeeze(2)
-        X[:, 13] = self.year_embedding(X[:, 13].long()).squeeze(2)
-        X[:, 14] = self.month_embedding(X[:, 14].long()).squeeze(2)
-        X[:, 15] = self.day_embedding(X[:, 15].long()).squeeze(2)
+        X[:, 9] = self.country_embedding(X[:, 9].long()).squeeze(2)
+        X[:, 10] = self.city_embedding(X[:, 10].long()).squeeze(2)
+        X[:, 11] = self.country_embedding(X[:, 11].long()).squeeze(2)
+        X[:, 12] = self.city_embedding(X[:, 12].long()).squeeze(2)
+        X[:, 13] = self.country_embedding(X[:, 13].long()).squeeze(2)
+
+        X[:, 14] = self.year_embedding(X[:, 14].long()).squeeze(2)
+        X[:, 15] = self.month_embedding(X[:, 15].long()).squeeze(2)
+        X[:, 16] = self.day_embedding(X[:, 16].long()).squeeze(2)
+        X[:, 17] = self.year_embedding(X[:, 17].long()).squeeze(2)
+        X[:, 18] = self.month_embedding(X[:, 18].long()).squeeze(2)
+        X[:, 19] = self.day_embedding(X[:, 19].long()).squeeze(2)
 
         for rnn in self.rnns:
             X = rnn(X)
